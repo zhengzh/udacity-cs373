@@ -154,30 +154,67 @@ def twiddle(tol=0.2):
     # TODO: twiddle loop here
 
     n = len(p)
+    it = 0
     while sum(dp) > tol:
+        print("Iteration {}, best error = {}".format(it, best_err))
         for i in range(n):
 
             inc = False
 
-            for j in [-1, 1]:
+            for j in [1, -1]:
                 p1 = p[:]
                 p1[i] += j * dp[i]
                 robot = make_robot()
                 _, _, error = run(robot, p1)
                 if error < best_err:
                     best_err = error
+                    p = p1
                     dp[i] *= 1.1
                     inc = True
-                    p = p1
                     break
 
             if not inc:
                 dp[i] *= 0.9
+        it += 1
+    return p, best_err
 
+
+def twiddle2(tol=0.2):
+    # TODO: Add code here
+    # Don't forget to call `make_robot` before you call `run`!
+    p = [0.0, 0.0, 0.0]
+    dp = [1.0, 1.0, 1.0]
+    robot = make_robot()
+    x_trajectory, y_trajectory, best_err = run(robot, p)
+
+    it = 0
+    while sum(dp) > tol:
+        # print("Iteration {}, best error = {}".format(it, best_err))
+        for i in range(len(p)):
+            p[i] += dp[i]
+            robot = make_robot()
+            x_trajectory, y_trajectory, err = run(robot, p)
+
+            if err < best_err:
+                best_err = err
+                dp[i] *= 1.1
+            else:
+                p[i] -= 2 * dp[i]
+                robot = make_robot()
+                x_trajectory, y_trajectory, err = run(robot, p)
+
+                if err < best_err:
+                    best_err = err
+                    dp[i] *= 1.1
+                else:
+                    p[i] += dp[i]
+                    dp[i] *= 0.9
+        it += 1
     return p, best_err
 
 
 params, err = twiddle()
+# params, err = twiddle2()
 print("Final twiddle error = {}".format(err))
 robot = make_robot()
 x_trajectory, y_trajectory, err = run(robot, params)
@@ -187,5 +224,5 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
 ax1.plot(x_trajectory, y_trajectory, 'g', label='Twiddle PID controller')
 ax1.plot(x_trajectory, np.zeros(n), 'r', label='reference')
 
-plt.legend()
+ax1.legend()
 plt.show()
